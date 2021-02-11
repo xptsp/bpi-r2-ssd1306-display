@@ -111,6 +111,9 @@ signal.signal(signal.SIGINT, signal_handler)
 # Main loop which shows information about our computer:
 ###################################################################################
 while True:
+	# Draw a black filled box to clear the image.
+	draw.rectangle((0,0,width,height), outline=0, fill=0)
+	
 	###############################################################################
 	# Show the globe symbol if the WAN interface up and cable connected.
 	###############################################################################
@@ -121,7 +124,7 @@ while True:
 		image.paste(globe, (32 * 0, 0))
 		draw.text((0, 30), "WAN:  " + get_ip_address("wan"),  font=font, fill=255)
 	except:
-		draw.text((0, 30), "WAN:  Down",  font=font, fill=255)
+		draw.text((0, 30), "Cable Disconnected",  font=font, fill=255)
 
 	###############################################################################
 	# Show the globe symbol if the 2.4Ghz wifi interface is up.
