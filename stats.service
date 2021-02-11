@@ -3,7 +3,9 @@ Description=SSD1306 Display
 
 [Service]
 WorkingDirectory=/opt/stats
-ExecStart=/opt/stats/stats.py
+ExecStartPre=/sbin/modprobe i2c_dev
+ExecStartPre=-echo ssd1306 0x3C > /sys/class/i2c-adapter/i2c-2/new_device
+ExecStart=/usr/bin/python3 /opt/stats/stats.py
 
 [Install]
 WantedBy=multi-user.target
