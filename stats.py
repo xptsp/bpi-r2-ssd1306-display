@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+###################################################################################
 # Copyright (c) 2017 Adafruit Industries
 # Author: Tony DiCola & James DeVito
 #
@@ -19,12 +20,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+###################################################################################
 import os
 import time
 import socket
 import fcntl
 import struct
 import psutil
+import signal
+import sys
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_SSD1306
 
@@ -32,16 +36,17 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 
-import subprocess
+###################################################################################
+# Change these variables to reflect which network adapter to use during this check
+###################################################################################
+wan_interface = "wan"
+w24_interface = "wlp1s0"
+w5G_interface = "wlp1s0"
+vpn_interface = "vpn_in"
 
-def get_ip_address(ifname):
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	return socket.inet_ntoa(fcntl.ioctl(
-		s.fileno(),
-		0x8915,  # SIOCGIFADDR
-		struct.pack('256s', ifname[:15].encode('UTF-8'))
-	)[20:24])
-
+###################################################################################
+# Setup for script execution:
+###################################################################################
 # Raspberry Pi pin configuration:
 RST = None     # on the PiOLED this pin isnt used
 # Note the following are only used with SPI:
@@ -69,86 +74,107 @@ draw = ImageDraw.Draw(image)
 # Draw a black filled box to clear the image.
 draw.rectangle((0,0,width,height), outline=0, fill=0)
 
-# Draw some shapes.
-# First define some constants to allow easy resizing of shapes.
-padding = -2
-top = padding + 32
-bottom = height-padding
-# Move left to right keeping track of the current x position for drawing shapes.
-x = 0
-
 # Load default font.
 font = ImageFont.load_default()
 
-# Load images
-power = Image.open('power.png').convert('1')
+###################################################################################
+# Load images once into memory:
+###################################################################################
 globe = Image.open('globe.png').convert('1')
 wifi  = Image.open('wifi.png').convert('1')
+no_wifi = Image.open('no-wifi.png').convert('1')
 vpn   = Image.open('vpn.png').convert('1')
 
-while True:
-	# Draw a black filled box to clear the image.
+###################################################################################
+# Function to get IP address about a specific network adapter:
+###################################################################################
+def get_ip_address(ifname):
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	return socket.inet_ntoa(fcntl.ioctl(
+		s.fileno(),
+		0x8915,  # SIOCGIFADDR
+		struct.pack('256s', ifname[:15].encode('UTF-8'))
+	)[20:24])
+
+###################################################################################
+# Our signal handler to clear the screen upon exiting the script:
+###################################################################################
+def signal_handler(sig, frame):
 	draw.rectangle((0,0,width,height), outline=0, fill=0)
-	
-	# Show the globe symbol if the WAN interface up and cable connected.
-	try:
-		with open("/sys/class/net/wan/operstate") as f:
-			state = f.read().strip()
-		if state == "up":
-			image.paste(globe, (32 * 0, 0))
-	except:
-		pass
+	disp.image(image)
+	disp.display()
+	sys.exit(0)
 
-	# Show the globe symbol if the WAN interface up and cable connected.
-	try:
-		with open("/sys/class/net/w24g_norm/operstate") as f:
-			state = f.read().strip()
-		if state == "up":
-			image.paste(wifi, (32 * 1, 0))
-	except:
-		pass
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
 
+###################################################################################
+# Our loop, showing information:
+###################################################################################
+while True:
 	# Show the globe symbol if the WAN interface up and cable connected.
 	try:
-		with open("/sys/class/net/w5g_norm/operstate") as f:
+		with open("/sys/class/net/" + wan_interface + "/operstate") as f:
+			state = f.read().strip()
+		if state != "up":
+			throw
+		image.paste(globe, (32 * 0, 0))
+		draw.text((0, 30), "WAN:  " + get_ip_address("wan"),  font=font, fill=255)
+	except:
+		draw.text((0, 30), "WAN:  Down",  font=font, fill=255)
+
+	# Show the globe symbol if the 2.4Ghz wifi interface is up.
+	draw.text((32 * 1, 16), "2.4G",  font=font, fill=255)
+	try:
+		with open("/sys/class/net/" + w24_interface + "/operstate") as f:
 			state = f.read().strip()
 		if state == "up":
-			image.paste(wifi, (32 * 2, 0))
+			throw
+		image.paste(wifi, (32 * 1, 0))
 	except:
-		pass
+		image.paste(no_wifi, (32 * 1 + 4, 0))
+
+	# Show the globe symbol if the 5Ghz wifi interface is up.
+	draw.text((32 * 2, 16), "5GHz",  font=font, fill=255)
+	try:
+		with open("/sys/class/net/" + w5G_interface + "/operstate") as f:
+			state = f.read().strip()
+		if state != "up":
+			throw
+		image.paste(wifi, (32 * 2 + 4, 0))
+	except:
+		image.paste(no_wifi, (32 * 2 + 4, 0))
 
 	# Show the VPN symbol if the VPN_IN interface up and cable connected.
 	try:
-		with open("/sys/class/net/vpn_in/operstate") as f:
+		with open("/sys/class/net/" + vpn_interface + "/operstate") as f:
 			state = f.read().strip()
 		if state == "up":
-			image.paste(vpn, (32 * 3, 0))
+			throw
+		image.paste(vpn, (32 * 3, 0))
 	except:
-		pass
+		image.paste(vpn, (32 * 3, 0))
 
-	# Write the IP address obtained from the WAN adapter:
-	draw.text((x, top),       "WAN:  " + get_ip_address("wan"),  font=font, fill=255)
-	
 	# Write the CPU load values:
 	load = os.getloadavg()
 	txt = '{a:.2f}'
-	draw.text((x, top + 8),  "Load: " + txt.format(a = load[0]) + "," + txt.format(a = load[1]) + "," + txt.format(a = load[2]),  font=font, fill=255)
+	draw.text((0, 38), "Load: " + txt.format(a = load[0]) + "," + txt.format(a = load[1]) + "," + txt.format(a = load[2]),  font=font, fill=255)
 
 	# Write the available and total memory:
 	mem = psutil.virtual_memory()
 	total = int(mem.total / 1024 / 1024)
-	free = total - int(mem.available / 1024 / 1024)
-	percent = int(free / total * 100)
-	draw.text((x, top + 16), "Mem:  " + str(free) + "M/" + str(total) + "M  " + str(percent) + "%", font=font, fill=255)
+	used = total - int(mem.available / 1024 / 1024)
+	percent = int(used / total * 100)
+	draw.text((0, 46), "Mem:  " + "{:4d}".format(used) + "M/" + "{:4d}".format(total) + "M " + "{:2d}".format(percent) + "%", font=font, fill=255)
 
 	# Write the available and total disk space:
 	mem = psutil.disk_usage('/')
 	total = int(mem.total / 1024 / 1024)
-	free = int(mem.free / 1024 / 1024)
-	percent = int(free / total * 100)
-	draw.text((x, top + 24), "Disk: " + str(free) + "M/" + str(total) + "M " + str(percent) + "%", font=font, fill=255)
+	used = total - int(mem.free / 1024 / 1024)
+	percent = int(used / total * 100)
+	draw.text((0, 54), "Disk: " + "{:4d}".format(used) + "M/" + "{:4d}".format(total) + "M " + "{:2d}".format(percent) + "%", font=font, fill=255)
 	
 	# Display image.
 	disp.image(image)
 	disp.display()
-	time.sleep(1)
+	time.sleep(.1)
