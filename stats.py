@@ -122,7 +122,7 @@ while True:
 			if f.read().strip() != "up":
 				throw
 		image.paste(globe, (32 * 0, 0))
-		draw.text((0, 30), "WAN:  " + get_ip_address("wan"),  font=font, fill=255)
+		draw.text((0, 30), "WAN:  " + get_ip_address(wan_interface),  font=font, fill=255)
 	except:
 		draw.text((0, 30), "Cable Disconnected",  font=font, fill=255)
 
