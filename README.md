@@ -6,7 +6,7 @@ The code found in this repo is based on the [stats.py](https://github.com/adafru
 ## Hardware and Software Used
 - [Banana Pi R2](http://www.banana-pi.org/r2.html)
 - [Frank-W's kernel 5.10.11](https://github.com/frank-w/BPI-R2-4.14) - branch **5.10-main**
-- [Frank-W's Debain 10](https://drive.google.com/file/d/1VbV_IaUy92p1bIrd74sahs77LQNSQEVd/view?usp=sharing)
+- [Frank-W's Debian 10](https://drive.google.com/file/d/1VbV_IaUy92p1bIrd74sahs77LQNSQEVd/view?usp=sharing)
 - [SSD1306 Display](https://www.amazon.com/gp/product/B076PM5ZSJ)
 
 ## Expected GPIO configuration
