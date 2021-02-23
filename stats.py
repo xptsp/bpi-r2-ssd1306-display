@@ -80,10 +80,10 @@ font = ImageFont.load_default()
 ###################################################################################
 # Load images once into memory:
 ###################################################################################
-globe = Image.open('globe.png').convert('1')
-wifi  = Image.open('wifi.png').convert('1')
-no_wifi = Image.open('no-wifi.png').convert('1')
-vpn   = Image.open('vpn.png').convert('1')
+globe = Image.open('images/globe.png').convert('1')
+wifi  = Image.open('images/wifi.png').convert('1')
+no_wifi = Image.open('images/no-wifi.png').convert('1')
+vpn   = Image.open('images/vpn.png').convert('1')
 
 ###################################################################################
 # Function to get IP address about a specific network adapter:
