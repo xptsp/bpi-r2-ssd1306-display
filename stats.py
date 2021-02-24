@@ -46,6 +46,9 @@ if use_img:
     from PIL import ImageDraw
     from PIL import ImageFont
 
+iconpath = os.path.dirname(__file__)
+iconwidth = 16
+
 ###################################################################################
 # Change these variables to reflect which network adapter to use during this check
 ###################################################################################
@@ -91,15 +94,11 @@ if use_img:
     ###################################################################################
     # Load images once into memory:
     ###################################################################################
-    globe = None
-    wifi  = None
-    no_wifi = None
-    vpn   = None
-    #globe = Image.open('globe.png').convert('1')
-    #wifi  = Image.open('wifi.png').convert('1')
-    #no_wifi = Image.open('no-wifi.png').convert('1')
-    #vpn   = Image.open('vpn.png').convert('1')
-
+    globe = Image.open(iconpath+"/"+'earth16w.png').convert('1')
+    wifi = Image.open(iconpath+"/"+'wifi16w.png').convert('1')
+    phone = Image.open(iconpath+"/"+'phone16w.png').convert('1')
+    no_wifi = Image.open(iconpath+"/"+'no16w.png').convert('1')
+    vpn   = Image.open(iconpath+"/"+'vpn16w.png').convert('1')
 
 ###################################################################################
 # Function to get IP address about a specific network adapter:
@@ -153,11 +152,9 @@ while True:
             if f.read().strip() != "up":
                 throw
         wifi24_ico=wifi
-        #image.paste(wifi, (32 * 1 + 4, 0))
         wifi24_txt+="up"
     except:
         wifi24_ico=no_wifi
-        #image.paste(no_wifi, (32 * 1 + 4, 0))
         wifi24_txt+="none"
     print(wifi24_txt)
 
@@ -173,7 +170,7 @@ while True:
         wifi5_ico=wifi
         wifi5_txt+="up"
     except:
-        wifino_ico=no_wifi
+        wifi5_ico=no_wifi
         wifi5_txt+="none"
     print(wifi5_txt)
 
@@ -187,8 +184,11 @@ while True:
                 throw
         vpn_ico=vpn
     except:
+        #vpn_ico=vpn
         pass
 
+    phone_ico=None
+    #phone_ico=phone
     ###############################################################################
     # Write the CPU load values
     ###############################################################################
@@ -239,15 +239,23 @@ while True:
         # Draw a black filled box to clear the image.
         draw.rectangle((0,0,width,height), outline=0, fill=0)
         if wan_ico:
-           image.paste(wan_ico, (32 * 0, 0))
+           image.paste(wan_ico, ((iconwidth + 2) * 0, 0))
         if wifi24_ico:
-            image.paste(wifi24_ico, (32 * 1 + 4, 0))
-        draw.text((32 * 1, 16), "2.4G",  font=font, fill=255)
+            image.paste(wifi24_ico, ((iconwidth + 2) * 1, 0))
+        draw.text((iconwidth * 1 + 4, 16), "2G",  font=font, fill=255)
         if wifi5_ico:
-            image.paste(wifi5_ico, (32 * 2 + 4, 0))
-        draw.text((32 * 2, 16), "5GHz",  font=font, fill=255)
-        if vpn_ico:
-            image.paste(vpn_ico, (32 * 3, 0))
+            image.paste(wifi5_ico, ((iconwidth + 2) * 2, 0))
+        draw.text((iconwidth * 2 + 6, 16), "5G",  font=font, fill=255)
+        if phone_ico:
+            image.paste(phone_ico, ((iconwidth + 2) * 3, 0))
+
+        if iconwidth < 24: #128/5=~25;-2=23
+            if vpn_ico:
+                image.paste(vpn_ico, ((iconwidth + 2) * 4, 0))
+        if iconwidth < 20: #128/6=~21;-2=19
+            if vpn_ico:
+                image.paste(vpn_ico, ((iconwidth + 2) * 4, 0))
+
         draw.text((0, 30), wan_txt,  font=font, fill=255)
         draw.text((0, 38), load_txt,  font=font, fill=255)
         draw.text((0, 46), mem_txt, font=font, fill=255)
